@@ -2,7 +2,7 @@
 
 (define grid (make-grid 16 10 3))
 
-(use sdl-base gl srfi-42 bindings)
+(use glut gl srfi-42 bindings)
 
 (define window-width 800)
 (define window-height 600)
@@ -40,20 +40,21 @@
 	    square)
   (gl:End))
 
-(define ev (make-sdl-event))
+;(define ev (make-sdl-event))
 
 (define done #f)
 
+(define *display-mode* (+ glut:DOUBLE glut:RGBA glut:DEPTH))
+(define *window-title* "loutre")
 
-(sdl-init SDL_INIT_VIDEO)
-(sdl-gl-set-attribute SDL_GL_RED_SIZE 8)
-(sdl-gl-set-attribute SDL_GL_GREEN_SIZE 8)
-(sdl-gl-set-attribute SDL_GL_BLUE_SIZE 8)
-(sdl-gl-set-attribute SDL_GL_ALPHA_SIZE 8)
-(sdl-gl-set-attribute SDL_GL_DEPTH_SIZE 16)
-(sdl-gl-set-attribute SDL_GL_DOUBLEBUFFER 1)
+  (glut:InitDisplayMode *display-mode*)
+  (glut:InitWindowSize     window-width window-height)
+;  (glut:InitWindowPosition 0 0)
+(glut:CreateWindow *window-title*)
 
-(sdl-set-video-mode window-width window-height 32 SDL_OPENGL)
+
+
+
 
 (gl:Viewport 0 0 window-width window-height)
 (gl:MatrixMode gl:PROJECTION)
@@ -64,15 +65,60 @@
 (gl:PointSize 4)
 
 
-(let loop ()
+'(let loop ()
   (gl:Clear gl:COLOR_BUFFER_BIT)
    (gl:Color3f 1.0 1.0 1.0)
-  (foreach-grid draw-cell grid display-area)
-  (sdl-gl-swap-buffers)
+   (foreach-grid draw-cell grid display-area)
+   (gl:Flush)
+   (glut:SwapBuffers)
+;  (sdl-gl-swap-buffers)
   (let ((evt-type (sdl-event-type ev)))
         (when (not (or (eqv? evt-type SDL_QUIT)
                    (and (eqv? evt-type SDL_KEYDOWN)
 			(eqv? (sdl-event-sym ev) SDLK_ESCAPE))))
 	      (loop))))
+
+(define (game-display)
+  (gl:Clear gl:COLOR_BUFFER_BIT)
+   (gl:Color3f 1.0 1.0 1.0)
+   (foreach-grid draw-cell grid display-area)
+   (gl:Flush)
+   (glut:SwapBuffers)
+   )
+  
+(define *game-commands* '())
+
+(define (game-keyboard key mouse-x mouse-y)
+  (case key
+    ((#\escape) (exit))
+    ((glut:KEY_UP)   (display "key up\n"))
+    ((glut:KEY_DOWN) (display "key down\n"))
+    ((glut:KEY_LEFT) (display "key left\n"))
+    ((glut:KEY_RIGHT) (display "key right\n"))
+    (else (write (list key mouse-x mouse-y)) (display "pressed \n"))))
+
+(define ((whatever name) #!rest args)
+  (write (list name args))
+  (display "\n"))
+
+
+(glut:DisplayFunc game-display)
+
+;(glut:JoystickFunc (whatever 'joystick))
+
+(glut:EntryFunc (whatever 'entry))
+
+(glut:KeyboardFunc game-keyboard) ;(proc key mouse-x mouse-y)
+(glut:KeyboardUpFunc (whatever 'keyboard-up))
+(glut:IdleFunc (whatever 'idle))
+(glut:MotionFunc (whatever 'motion)) ;(proc x y)
+(glut:MouseFunc (whatever 'mouse)) ;(proc button up x y)
+(glut:PassiveMotionFunc (whatever 'passive-motion)) ;(proc x y)
+(glut:SpecialFunc (whatever 'special)) ;(proc key x y)
+(glut:SpecialUpFunc (whatever 'special-up)) ;(proc key x y)
+
+
+(glut:MainLoop)
+
 
 (exit)
